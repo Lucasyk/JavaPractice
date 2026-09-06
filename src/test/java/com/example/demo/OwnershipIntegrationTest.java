@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.http.HttpHeaders;
 import java.util.Map;
 
+import javax.print.attribute.standard.Media;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -191,23 +193,88 @@ public class OwnershipIntegrationTest {
   }
 
   @Test
-void admin_canDeleteBobsPlayer() throws Exception {
+  void admin_canDeleteBobsPlayer() throws Exception {
 
-    String token =
-            loginAndGetToken("admin", "adminpass123");
+    String token = loginAndGetToken("admin", "adminpass123");
 
     mockMvc.perform(
-            delete("/api/players/" + bobPlayer.getId())
-                    .header(
-                            HttpHeaders.AUTHORIZATION,
-                            "Bearer " + token
-                    )
-    )
-            .andExpect(status().isNoContent());
+        delete("/api/players/" + bobPlayer.getId())
+            .header(
+                HttpHeaders.AUTHORIZATION,
+                "Bearer " + token))
+        .andExpect(status().isNoContent());
 
-    boolean stillExists =
-            playerRepository.existsById(bobPlayer.getId());
+    boolean stillExists = playerRepository.existsById(bobPlayer.getId());
 
     assertFalse(stillExists);
-}
+  }
+
+  @Test
+  void lucas_canGainExperienceOnHisPlayer() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+        post("/api/players/" + lucasPlayer.getId() + "/experience")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                    {
+                    "amount" : 250
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.level").value(2))
+        .andExpect(jsonPath("$.experience").value(150));
+
+    Player updated = playerRepository.findById(lucasPlayer.getId()).orElseThrow();
+
+    assertEquals(2, updated.getLevel());
+    assertEquals(150, updated.getExperience());
+  }
+  
+  @Test
+  void negativeExperience_returns400() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+        post("/api/players/" + lucasPlayer.getId() + "/experience")
+            .header(
+                HttpHeaders.AUTHORIZATION,
+                "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                  {
+                  "amount":-100
+                  }
+                """))
+        .andExpect(status().isBadRequest());
+
+    Player unchanged = playerRepository.findById(lucasPlayer.getId()).orElseThrow();
+
+    assertEquals(1, unchanged.getLevel());
+    assertEquals(0, unchanged.getExperience());
+  }
+  
+  @Test
+  void lucas_cannotGiveExperienceToBobsPlayer() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+      post("/api/players/" + bobPlayer.getId() + "/experience")
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content("""
+        {
+       "amount":500 
+        }
+      """)
+    )
+        .andExpect(status().isNotFound());
+
+    Player unchanged = playerRepository.findById(bobPlayer.getId()).orElseThrow();
+
+    assertEquals(1, unchanged.getLevel());
+    assertEquals(0, unchanged.getExperience());
+  }
 }
