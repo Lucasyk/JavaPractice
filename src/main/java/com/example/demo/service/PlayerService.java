@@ -6,6 +6,8 @@ import com.example.demo.model.AppUser;
 import com.example.demo.repository.PlayerRepository;
 import com.example.demo.repository.UserRepository;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -72,16 +74,42 @@ public class PlayerService {
 
     if (isAdmin) {
       player = playerRepository.findById(id)
-          .orElseThrow(()->new PlayerNotFoundException(id));
-    }
-    else {
+          .orElseThrow(() -> new PlayerNotFoundException(id));
+    } else {
       player = playerRepository
-      .findByIdAndOwner_Username(id, username)
+          .findByIdAndOwner_Username(id, username)
           .orElseThrow(() -> new PlayerNotFoundException(id));
     }
 
     playerRepository.delete(player);
   }
   
+  @Transactional
+  public Player addExperienceForUser(
+    Long id,
+        int amount,
+            String username
+  ) {
+    Player player = playerRepository.findByIdAndOwner_Username(id, username)
+        .orElseThrow(() -> new PlayerNotFoundException(id));
+
+    player.setExperience(
+      player.getExperience() + amount
+    );
+
+    while (player.getExperience() >= experienceNeeded(player.getLevel())) {
+      int required = experienceNeeded(player.getLevel());
+
+      player.setExperience(player.getExperience() - required);
+
+      player.setLevel(player.getLevel() + 1);
+    }
+
+    return playerRepository.save(player);
+  }
   
+  //This is helper function
+  private int experienceNeeded(int level) {
+    return level * 100;
+  }
 }

@@ -152,24 +152,76 @@ void deletePlayerForUser_deletesOwnedPlayer() {
 }
 
   @Test
-void deletePlayerForUser_missingPlayer_throwsException() {
+  void deletePlayerForUser_missingPlayer_throwsException() {
 
     given(
-            playerRepository.findByIdAndOwner_Username(
-                    999L,
-                    "lucas"
-            )
-    )
-            .willReturn(Optional.empty());
+        playerRepository.findByIdAndOwner_Username(
+            999L,
+            "lucas"))
+        .willReturn(Optional.empty());
 
     assertThrows(
-            PlayerNotFoundException.class,
-            () -> playerService.deletePlayerForUser(
-                    999L,
-                    "lucas",
-                    false
-            )
-    );
-}
+        PlayerNotFoundException.class,
+        () -> playerService.deletePlayerForUser(
+            999L,
+            "lucas",
+            false));
+  }
+
+  @Test
+  void addExperience_withoutLevelUp_increasesExperience() {
+    Player player = new Player("Knight", 1);
+
+    given(
+        playerRepository.findByIdAndOwner_Username(1L, "lucas")).willReturn(Optional.of(player));
+
+    given(playerRepository.save(player)).willReturn(player);
+
+    Player result = playerService.addExperienceForUser(1L, 50, "lucas");
+
+    assertEquals(1, result.getLevel());
+    assertEquals(50, result.getExperience());
+  }
+  
+  @Test
+  void addExperience_enoughForOneLevelUp_levelsUp() {
+    Player player = new Player("Knight", 1);
+
+    given(
+        playerRepository.findByIdAndOwner_Username(1L, "lucas")).willReturn(Optional.of(player));
+
+    given(playerRepository.save(player)).willReturn(player);
+
+    Player result = playerService.addExperienceForUser(1L, 250, "lucas");
+
+    assertEquals(2, result.getLevel());
+    assertEquals(150, result.getExperience());
+  }
+  
+  @Test
+  void addExperience_largeAmount_canLevelUpMultipleTimes() {
+    Player player = new Player("Knight", 1);
+
+    given(
+        playerRepository.findByIdAndOwner_Username(1L, "lucas")).willReturn(Optional.of(player));
+
+    given(
+        playerRepository.save(player)).willReturn(player);
+
+    Player result = playerService.addExperienceForUser(1L, 350, "lucas");
+
+    assertEquals(3, result.getLevel());
+    assertEquals(50, result.getExperience());
+  }
+  
+  @Test
+  void addExperience_toAnotherUsersPlayer_throwsException() {
+    given(playerRepository.findByIdAndOwner_Username(
+      5L,
+          "lucas"
+    )).willReturn(Optional.empty());
+
+    assertThrows(PlayerNotFoundException.class,  ()->playerService.addExperienceForUser(5L, 100, "lucas"));
+  }
 
 }

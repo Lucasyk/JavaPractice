@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.CreatePlayerRequest;
 import com.example.demo.dto.UpdatePlayerRequest;
+import com.example.demo.dto.AddExperienceRequest;
 import com.example.demo.dto.PlayerResponse;
 import com.example.demo.model.Player;
 import com.example.demo.service.PlayerService;
@@ -52,10 +53,18 @@ public class PlayerController {
     Player player = playerService.createPlayer(
         request.name(),
         request.level(),
-        authentication.getName()  
-      );
+        authentication.getName());
 
-
+    return PlayerResponse.from(player);
+  }
+  
+  @PostMapping("/{id}/experience")
+  public PlayerResponse addExperience(
+    @PathVariable Long id,
+        @Valid @RequestBody AddExperienceRequest request,
+            Authentication authentication
+  ) {
+    Player player = playerService.addExperienceForUser(id, request.amount(), authentication.getName());
 
     return PlayerResponse.from(player);
   }
