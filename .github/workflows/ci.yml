@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   test:
@@ -37,3 +38,23 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t demo-app:ci .
+
+      - name: Log in to Github Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with: 
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Push Docker image to GHCR
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+
+          docker tag demo-app:ci "$IMAGE:latest"
+          docker tag demo-app:ci "$IMAGE:${GITHUB_SHA}"
+
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${GITHUB_SHA}"
