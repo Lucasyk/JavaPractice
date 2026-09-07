@@ -34,3 +34,6 @@ jobs:
 
       - name: Run tests
         run: ./gradlew clean test --no-daemon
+
+      - name: Build Docker image
+        run: docker build -t demo-app:ci .
