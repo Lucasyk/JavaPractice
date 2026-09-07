@@ -27,7 +27,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
 	runtimeOnly"org.postgresql:postgresql"
-	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'

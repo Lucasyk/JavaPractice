@@ -13,6 +13,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import com.example.demo.repository.PlayerRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.model.AppUser;
+import com.example.demo.model.Player;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.Connection;
@@ -33,6 +38,12 @@ class PostgreSqlContainerTest {
 
   @Autowired
   private JdbcTemplate jdbcTemplate;
+
+  @Autowired
+  private UserRepository userRepository;
+
+  @Autowired
+  private PlayerRepository playerRepository;
 
   @Test
   void connectsToTemporaryPostgres() throws Exception {
@@ -55,9 +66,35 @@ class PostgreSqlContainerTest {
   @Test
   void flywayCreatedAppUserTable() {
     String tableName = jdbcTemplate.queryForObject("""
-      SELECT to_regclass('public.app_user')
-      """, String.class);
+        SELECT to_regclass('public.app_user')
+        """, String.class);
 
-      assertEquals("app_user", tableName);
+    assertEquals("app_user", tableName);
+  }
+  
+  @Test
+  void canSaveAndFindPlayerByOwner() {
+    
+    AppUser lucas = new AppUser(
+      "lucas",
+          "fake-hash",
+              "ROLE_USER"
+    );
+
+    lucas = userRepository.save(lucas);
+
+    Player knight = new Player(
+      "Knight",
+          1
+    );
+
+    knight.setOwner(lucas);
+
+    playerRepository.save(knight);
+
+    Player saved = playerRepository.findByIdAndOwner_Username(knight.getId(), "lucas").orElseThrow();
+
+    assertEquals("Knight", saved.getName());
+    assertEquals("lucas", saved.getOwner().getUsername());
   }
 }
