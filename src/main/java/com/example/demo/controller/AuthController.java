@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import java.net.Authenticator;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import com.example.demo.dto.LoginRequest;
-import com.example.demo.dto.LoginResponse;
 import com.example.demo.service.JwtService;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.dto.UserResponse;

@@ -71,8 +71,8 @@ void createPlayer_thenGetPlayers_returnsSavedPlayer() throws Exception {
 
     mockMvc.perform(get("/api/players").with(jwt().jwt(jwt -> jwt.subject("lucas"))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].name").value("Lucas"))
-            .andExpect(jsonPath("$[0].level").value(1));
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Lucas"))
+            .andExpect(jsonPath("$.content[0].level").value(1));
 }
 }

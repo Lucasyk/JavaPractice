@@ -7,11 +7,9 @@ import com.example.demo.repository.PlayerRepository;
 import com.example.demo.repository.UserRepository;
 
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-
 
 @Service
 public class PlayerService {
@@ -23,8 +21,13 @@ public class PlayerService {
     this.userRepository = userRepository;
   }
 
-  public List<Player> getPlayersForUser(String username) {
-    return playerRepository.findByOwner_Username(username);
+  public Page<Player> getPlayersForUser(String username, String name, Pageable pageable) {
+    if (name == null || name.isBlank()) {
+      return playerRepository.findByOwner_Username(username, pageable);
+    }
+
+
+    return playerRepository.findByOwner_UsernameAndNameContainingIgnoreCase(username,name, pageable);
   }
 
   public Player createPlayer(String name, int level, String username) {
@@ -94,8 +97,7 @@ public class PlayerService {
         .orElseThrow(() -> new PlayerNotFoundException(id));
 
     player.setExperience(
-      player.getExperience() + amount
-    );
+        player.getExperience() + amount);
 
     while (player.getExperience() >= experienceNeeded(player.getLevel())) {
       int required = experienceNeeded(player.getLevel());
@@ -103,6 +105,26 @@ public class PlayerService {
       player.setExperience(player.getExperience() - required);
 
       player.setLevel(player.getLevel() + 1);
+    }
+
+    return playerRepository.save(player);
+  }
+  
+  public Player patchPlayerForUser(
+    Long id,
+        String name,
+            Integer level,
+                String username
+  ) {
+    Player player = playerRepository.findByIdAndOwner_Username(id, username)
+        .orElseThrow(() -> new PlayerNotFoundException(id));
+
+    if (name != null) {
+      player.setName(name);
+    }
+        
+    if (level != null) {
+      player.setLevel(level);
     }
 
     return playerRepository.save(player);

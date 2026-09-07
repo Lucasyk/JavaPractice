@@ -1,9 +1,11 @@
 package com.example.demo;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.never;
 
 import com.example.demo.repository.PlayerRepository;
 import com.example.demo.repository.UserRepository;
@@ -123,8 +126,9 @@ public class OwnershipIntegrationTest {
       .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
     )
     .andExpect(status().isOk())
-    .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].name").value("Knight"));
+    .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Knight"))
+        .andExpect(jsonPath("$.totalElements").value(1));
   }
   
   @Test
@@ -261,20 +265,111 @@ public class OwnershipIntegrationTest {
     String token = loginAndGetToken("lucas", "dragon123");
 
     mockMvc.perform(
-      post("/api/players/" + bobPlayer.getId() + "/experience")
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-      .contentType(MediaType.APPLICATION_JSON)
-      .content("""
-        {
-       "amount":500 
-        }
-      """)
-    )
+        post("/api/players/" + bobPlayer.getId() + "/experience")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                  {
+                 "amount":500
+                  }
+                """))
         .andExpect(status().isNotFound());
 
     Player unchanged = playerRepository.findById(bobPlayer.getId()).orElseThrow();
 
     assertEquals(1, unchanged.getLevel());
     assertEquals(0, unchanged.getExperience());
+  }
+  
+  @Test
+  void lucas_canPatchOnlyPlayerName() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+        patch("/api/players/" + lucasPlayer.getId())
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                  {
+                  "name": "Super Knight"
+                  }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Super Knight"))
+        .andExpect(jsonPath("$.level").value(1));
+
+    Player updated = playerRepository.findById(lucasPlayer.getId()).orElseThrow();
+
+    assertEquals("Super Knight", updated.getName());
+    assertEquals(1, updated.getLevel());
+  }
+  
+  @Test
+  void lucas_canPatchOnlyPlayerLevel() throws Exception {
+
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+        patch("/api/players/" + lucasPlayer.getId())
+            .header(
+                HttpHeaders.AUTHORIZATION,
+                "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "level": 5
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Knight"))
+        .andExpect(jsonPath("$.level").value(5));
+
+    Player updated = playerRepository.findById(lucasPlayer.getId())
+        .orElseThrow();
+
+    assertEquals("Knight", updated.getName());
+    assertEquals(5, updated.getLevel());
+  }
+
+  @Test
+  void lucas_cannotPatchBobsPlayer() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+        patch("/api/players" + bobPlayer.getId())
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                  {
+                  "name":"Hacker",
+                      "level":99
+                  }
+                """))
+        .andExpect(status().isNotFound());
+
+    Player unchanged = playerRepository.findById(bobPlayer.getId()).orElseThrow();
+
+    assertEquals("Darkwizard", unchanged.getName());
+    assertEquals(1, unchanged.getLevel());
+  }
+  
+  @Test
+  void patchPlayer_withInvalidLevel_returns400() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+        patch("/api/players/" + lucasPlayer.getId())
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                "level": 0
+                }
+                """))
+        .andExpect(status().isBadRequest());
+
+    Player unchanged = playerRepository.findById(lucasPlayer.getId()).orElseThrow();
+
+    assertEquals(1, unchanged.getLevel());
   }
 }
