@@ -91,3 +91,24 @@ jobs:
           aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id "${{ vars.EC2_INSTANCE_ID }}"
+
+      - name: Verify deployment health
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          for i in {1..12}; do
+            echo "Health check attempt $i..."
+
+            if curl --fail --silent \
+              https://api.lucaskoga.com/actuator/health \
+              | grep -q '"status":"UP"'; then
+
+              echo "Deployment is healthy!"
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "Deployment health check failed."
+          exit 1
