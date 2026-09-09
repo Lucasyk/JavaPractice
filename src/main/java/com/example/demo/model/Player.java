@@ -1,5 +1,9 @@
 package com.example.demo.model;
 
+import java.time.Instant;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,6 +23,16 @@ public class Player {
   private int level;
 
   private int experience;
+
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
+
+  @PrePersist
+  public void onCreate() {
+    if (createdAt == null) {
+      createdAt = Instant.now();
+    }
+  }
 
   @ManyToOne
   @JoinColumn(name = "owner_id")
@@ -43,6 +57,10 @@ public class Player {
     return level;
   }
 
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+  
   public void setName(String name) {
     this.name = name;
   }

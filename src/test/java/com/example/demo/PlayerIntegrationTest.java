@@ -51,11 +51,6 @@ class PlayerIntegrationTest {
     userRepository.save(lucas);
   }
 
-  @BeforeEach
-  void cleanDatabase() {
-    playerRepository.deleteAll();
-  }
-
   @Test
 void createPlayer_thenGetPlayers_returnsSavedPlayer() throws Exception {
 
@@ -71,7 +66,8 @@ void createPlayer_thenGetPlayers_returnsSavedPlayer() throws Exception {
     )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Lucas"))
-            .andExpect(jsonPath("$.level").value(1));
+            .andExpect(jsonPath("$.level").value(1))
+        .andExpect(jsonPath("$.createdAt").exists());
 
     mockMvc.perform(get("/api/players").with(jwt().jwt(jwt -> jwt.subject("lucas"))))
             .andExpect(status().isOk())
