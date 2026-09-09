@@ -78,11 +78,29 @@ class PlayerIntegrationTest {
   @Test
   void getPlayers_largePageSize_isCappedAt100() throws Exception {
     mockMvc.perform(
-      get("/api/players?page=0&size=10000")
+        get("/api/players?page=0&size=10000")
+            .with(jwt().jwt(jwt -> jwt.subject("lucas"))))
+
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(100));
+  }
+  
+  @Test
+  void getPlayers_invalidSortField_returns400() throws Exception {
+
+    mockMvc.perform(
+        get("/api/players?sort=banana,asc")
+            .with(jwt().jwt(jwt -> jwt.subject("lucas"))))
+
+        .andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void getPlayers_validSortField_returns200() throws Exception {
+    mockMvc.perform(
+      get("/api/players?sort=level,desc")
       .with(jwt().jwt(jwt -> jwt.subject("lucas")))
     )
-
-    .andExpect(status().isOk())
-        .andExpect(jsonPath("$.size").value(100));
+        .andExpect(status().isOk());
   }
 }

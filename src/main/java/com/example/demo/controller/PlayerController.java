@@ -19,6 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.Set;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -32,12 +39,30 @@ import jakarta.validation.Valid;
 public class PlayerController {
   private final PlayerService playerService;
 
+  private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+    "id",
+        "name",
+            "level",
+                "experience",
+                    "createdAt"
+  ); 
+
   public PlayerController(PlayerService playerService) {
     this.playerService = playerService;
   }
 
   @GetMapping
-  public Page<PlayerResponse> getPlayers(Authentication authentication,@RequestParam(required = false)String name ,Pageable pageable) {
+  public Page<PlayerResponse> getPlayers(Authentication authentication, @RequestParam(required = false) String name,
+      Pageable pageable) {
+    
+    for (Sort.Order order : pageable.getSort()) {
+      if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                  "Invalid sort field: " + order.getProperty()
+            );
+          }
+        }
+
     return playerService.getPlayersForUser(authentication.getName(),name, pageable).map(PlayerResponse::from);
   }
 
