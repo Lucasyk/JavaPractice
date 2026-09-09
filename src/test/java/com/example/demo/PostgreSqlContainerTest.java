@@ -24,6 +24,8 @@ import java.sql.Connection;
 
 import javax.sql.DataSource;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("tc")
@@ -73,6 +75,7 @@ class PostgreSqlContainerTest {
   }
   
   @Test
+  @Transactional
   void canSaveAndFindPlayerByOwner() {
     
     AppUser lucas = new AppUser(
