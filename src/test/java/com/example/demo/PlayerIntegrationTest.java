@@ -52,27 +52,37 @@ class PlayerIntegrationTest {
   }
 
   @Test
-void createPlayer_thenGetPlayers_returnsSavedPlayer() throws Exception {
+  void createPlayer_thenGetPlayers_returnsSavedPlayer() throws Exception {
 
     mockMvc.perform(
-            post("/api/players").with(jwt().jwt(jwt -> jwt.subject("lucas")))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""
-                            {
-                              "name": "Lucas",
-                              "level": 1
-                            }
-                            """)
-    )
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Lucas"))
-            .andExpect(jsonPath("$.level").value(1))
+        post("/api/players").with(jwt().jwt(jwt -> jwt.subject("lucas")))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "Lucas",
+                  "level": 1
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Lucas"))
+        .andExpect(jsonPath("$.level").value(1))
         .andExpect(jsonPath("$.createdAt").exists());
 
     mockMvc.perform(get("/api/players").with(jwt().jwt(jwt -> jwt.subject("lucas"))))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content.length()").value(1))
-            .andExpect(jsonPath("$.content[0].name").value("Lucas"))
-            .andExpect(jsonPath("$.content[0].level").value(1));
-}
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Lucas"))
+        .andExpect(jsonPath("$.content[0].level").value(1));
+  }
+
+  @Test
+  void getPlayers_largePageSize_isCappedAt100() throws Exception {
+    mockMvc.perform(
+      get("/api/players?page=0&size=10000")
+      .with(jwt().jwt(jwt -> jwt.subject("lucas")))
+    )
+
+    .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(100));
+  }
 }
