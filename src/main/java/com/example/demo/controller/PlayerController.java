@@ -28,7 +28,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
+import org.springframework.data.domain.Slice;
 import org.springframework.security.core.Authentication;
 
 
@@ -52,7 +52,7 @@ public class PlayerController {
   }
 
   @GetMapping
-  public Page<PlayerResponse> getPlayers(Authentication authentication, @RequestParam(required = false) String name,
+  public Slice<PlayerResponse> getPlayers(Authentication authentication, @RequestParam(required = false) String name,
       Pageable pageable) {
     
     for (Sort.Order order : pageable.getSort()) {
@@ -68,7 +68,7 @@ public class PlayerController {
 
   @GetMapping("/{id}")
   public PlayerResponse getPlayerById(
-      @PathVariable Long id, Authentication authentication
+      @PathVariable Long id, Authentication authentication, Pageable pageable
   ) {
     Player player = playerService.getPlayerForUser(id,authentication.getName());
     return PlayerResponse.from(

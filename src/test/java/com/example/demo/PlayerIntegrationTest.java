@@ -1,10 +1,13 @@
 package com.example.demo;
 
+import com.example.demo.model.*;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import static org.mockito.Mockito.withSettings;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 
@@ -14,11 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.example.demo.model.AppUser;
 import com.example.demo.repository.PlayerRepository;
 import com.example.demo.repository.UserRepository;
 
@@ -98,9 +102,33 @@ class PlayerIntegrationTest {
   @Test
   void getPlayers_validSortField_returns200() throws Exception {
     mockMvc.perform(
-      get("/api/players?sort=level,desc")
-      .with(jwt().jwt(jwt -> jwt.subject("lucas")))
-    )
+        get("/api/players?sort=level,desc")
+            .with(jwt().jwt(jwt -> jwt.subject("lucas"))))
         .andExpect(status().isOk());
   }
+  
+  @Test
+void getPlayers_returnsSliceWithNextPage() throws Exception {
+
+    AppUser lucas = userRepository.findByUsername("lucas")
+            .orElseThrow();
+
+    Player player1 = new Player("Knight", 1);
+    player1.setOwner(lucas);
+
+    Player player2 = new Player("Wizard", 1);
+    player2.setOwner(lucas);
+
+    playerRepository.saveAndFlush(player1);
+    playerRepository.saveAndFlush(player2);
+
+    mockMvc.perform(
+            get("/api/players?page=0&size=1")
+                    .with(jwt().jwt(jwt -> jwt.subject("lucas")))
+    )
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.last").value(false));
+}
 }

@@ -130,7 +130,8 @@ class OwnershipIntegrationTest {
     .andExpect(status().isOk())
     .andExpect(jsonPath("$.content.length()").value(1))
         .andExpect(jsonPath("$.content[0].name").value("Knight"))
-        .andExpect(jsonPath("$.totalElements").value(1));
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.first").value(true));
   }
   
   @Test
