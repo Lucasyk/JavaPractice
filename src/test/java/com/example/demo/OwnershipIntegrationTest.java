@@ -374,4 +374,21 @@ class OwnershipIntegrationTest {
 
     assertEquals(1, unchanged.getLevel());
   }
+
+  @Test
+  void patchPlayer_blankName_returns400() throws Exception {
+    String token = loginAndGetToken("lucas", "dragon123");
+
+    mockMvc.perform(
+      patch("/api/players/" + lucasPlayer.getId())
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content("""
+        {
+        "name": "      "
+        }
+      """)
+    )
+        .andExpect(status().isBadRequest());
+  }
 }
