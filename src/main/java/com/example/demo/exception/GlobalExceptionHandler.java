@@ -5,7 +5,7 @@ import com.example.demo.dto.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -46,16 +46,32 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(PlayerNotFoundException.class)
   public ResponseEntity<ApiErrorResponse> handlePlayerNotFound(PlayerNotFoundException exception,
       HttpServletRequest request) {
-    
+
+    ApiErrorResponse response = new ApiErrorResponse(
+        Instant.now(),
+        404,
+        "Not Found",
+        exception.getMessage(),
+        request.getRequestURI(),
+        Map.of());
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+  
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ApiErrorResponse> handleMalformedJson(
+    HttpMessageNotReadableException exception,
+        HttpServletRequest request
+  ) {
     ApiErrorResponse response = new ApiErrorResponse(
       Instant.now(),
-          404,
-              "Not Found",
-                  exception.getMessage(),
+          400,
+              "Bad Request",
+                  "Malformed JSON request",
                       request.getRequestURI(),
                           Map.of()
     );
 
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    return ResponseEntity.badRequest().body(response);
   }
 }

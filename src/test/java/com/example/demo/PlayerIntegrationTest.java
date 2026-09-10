@@ -153,20 +153,43 @@ class PlayerIntegrationTest {
 
   
   @Test
-void getPlayer_missingPlayer_returnsConsistentErrorResponse() throws Exception {
+  void getPlayer_missingPlayer_returnsConsistentErrorResponse() throws Exception {
+
+      mockMvc.perform(
+              get("/api/players/999999")
+                      .with(jwt().jwt(jwt -> jwt.subject("lucas"))))
+              .andExpect(status().isNotFound())
+              .andExpect(jsonPath("$.status").value(404))
+              .andExpect(jsonPath("$.error").value("Not Found"))
+              .andExpect(jsonPath("$.message")
+                      .value("Player with id 999999 was not found."))
+              .andExpect(jsonPath("$.path")
+                      .value("/api/players/999999"))
+              .andExpect(jsonPath("$.fieldErrors").isMap());
+  }
+
+  @Test
+void patchPlayer_malformedJson_returnsConsistentErrorResponse()
+        throws Exception {
 
     mockMvc.perform(
-            get("/api/players/999999")
+            patch("/api/players/1")
                     .with(jwt().jwt(jwt -> jwt.subject("lucas")))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "name":
+                        }
+                        """)
     )
     .andDo(print())
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.status").value(404))
-            .andExpect(jsonPath("$.error").value("Not Found"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.error").value("Bad Request"))
             .andExpect(jsonPath("$.message")
-                    .value("Player with id 999999 was not found."))
+                    .value("Malformed JSON request"))
             .andExpect(jsonPath("$.path")
-                    .value("/api/players/999999"))
+                    .value("/api/players/1"))
             .andExpect(jsonPath("$.fieldErrors").isMap());
 }
 }
