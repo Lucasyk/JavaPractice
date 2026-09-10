@@ -1,46 +1,61 @@
 package com.example.demo.exception;
 
+import com.example.demo.dto.ApiErrorResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(PlayerNotFoundException.class)
-  public ResponseEntity<Map<String, String>> handlePlayerNotFound(PlayerNotFoundException exception) {
-    Map<String, String> error = new HashMap<>();
-    
-    error.put("error", exception.getMessage());
-
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-  }
-  
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException exception) {
-    Map<String, String> errors = new HashMap<>();
+  public ResponseEntity<ApiErrorResponse> handleValidation(
+    MethodArgumentNotValidException exception,
+        HttpServletRequest request
+  ) {
+    Map<String, String> fieldErrors = new HashMap<>();
 
-    exception.getBindingResult().getFieldErrors()
-        .forEach(error -> errors.put(
-            error.getField(),
-            error.getDefaultMessage()));
+    exception.getBindingResult()
+    .getFieldErrors()
+    .forEach(error ->
+      fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
+    
+    ApiErrorResponse response = new ApiErrorResponse(
+      Instant.now(),
+          400,
+        "Bad Request",
+                  "Validation failed",
+                  request.getRequestURI(),
+                      fieldErrors
+    );
 
-    return ResponseEntity.badRequest().body(errors);
+    return ResponseEntity.badRequest().body(response);
   }
 
-  @ExceptionHandler(UsernameAlreadyExistsException.class)
-  public ResponseEntity<Map<String, String>>handleUsernameAlreadyExists(
-    UsernameAlreadyExistsException exception
-  ) {
-    Map<String, String> error = new HashMap<>();
+  @ExceptionHandler(PlayerNotFoundException.class)
+  public ResponseEntity<ApiErrorResponse> handlePlayerNotFound(PlayerNotFoundException exception,
+      HttpServletRequest request) {
+    
+    ApiErrorResponse response = new ApiErrorResponse(
+      Instant.now(),
+          404,
+              "Not Found",
+                  exception.getMessage(),
+                      request.getRequestURI(),
+                          Map.of()
+    );
 
-    error.put("error", exception.getMessage());
-
-    return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
   }
 }

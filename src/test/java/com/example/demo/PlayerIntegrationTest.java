@@ -3,6 +3,7 @@ package com.example.demo;
 import com.example.demo.model.*;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -108,10 +109,10 @@ class PlayerIntegrationTest {
   }
   
   @Test
-void getPlayers_returnsSliceWithNextPage() throws Exception {
+  void getPlayers_returnsSliceWithNextPage() throws Exception {
 
     AppUser lucas = userRepository.findByUsername("lucas")
-            .orElseThrow();
+        .orElseThrow();
 
     Player player1 = new Player("Knight", 1);
     player1.setOwner(lucas);
@@ -123,12 +124,49 @@ void getPlayers_returnsSliceWithNextPage() throws Exception {
     playerRepository.saveAndFlush(player2);
 
     mockMvc.perform(
-            get("/api/players?page=0&size=1")
+        get("/api/players?page=0&size=1")
+            .with(jwt().jwt(jwt -> jwt.subject("lucas"))))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.last").value(false));
+  }
+
+  @Test
+  void patchPlayer_blankName_returnsConsistentErrorResponse() throws Exception {
+    mockMvc.perform(
+        patch("/api/players/1")
+            .with(jwt().jwt(jwt -> jwt.subject("lucas")))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                  {
+                  "name" : "    "
+                  }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("Bad Request"))
+        .andExpect(jsonPath("$.message").value("Validation failed"))
+        .andExpect(jsonPath("$.path").value("/api/players/1"))
+        .andExpect(jsonPath("$.fieldErrors.name").value("Name must not be blank."));
+  }
+
+  
+  @Test
+void getPlayer_missingPlayer_returnsConsistentErrorResponse() throws Exception {
+
+    mockMvc.perform(
+            get("/api/players/999999")
                     .with(jwt().jwt(jwt -> jwt.subject("lucas")))
     )
-            .andDo(print())
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content.length()").value(1))
-            .andExpect(jsonPath("$.last").value(false));
+    .andDo(print())
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.error").value("Not Found"))
+            .andExpect(jsonPath("$.message")
+                    .value("Player with id 999999 was not found."))
+            .andExpect(jsonPath("$.path")
+                    .value("/api/players/999999"))
+            .andExpect(jsonPath("$.fieldErrors").isMap());
 }
 }
