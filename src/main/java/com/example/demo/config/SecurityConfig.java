@@ -51,9 +51,19 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/actuator/health", "/").permitAll()
-                        .anyRequest().authenticated()
-                )
+    .requestMatchers(
+        "/",
+        "/index.html",
+        "/error",
+        "/favicon.ico",
+        "/css/**",
+        "/js/**",
+        "/images/**",
+        "/api/auth/**",
+        "/actuator/health"
+    ).permitAll()
+    .anyRequest().authenticated()
+)
 
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(
